@@ -1,0 +1,71 @@
+plugins {
+    id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'maven-publish'
+}
+
+version = "${project.mod_version}-${project.minecraft_version}"
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.fabricmc.net/' }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = 17
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+jar {
+    from('LICENSE') {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+    }
+}
+
+/*
+ * Multi-version task matrix (see README.md).
+ *
+ * The runtime logic is written against the loader-agnostic helpers in
+ * dev.twitchmod.core.VersionBridge, so the same sources can be re-targeted to
+ * another Minecraft line by swapping only gradle.properties + the small
+ * VersionBridge adapter. Example local command:
+ *
+ *   ./gradlew build -Pminecraft_version=1.20.4 -Pyarn_mappings=1.20.4+build.3 \
+ *                  -Pfabric_version=0.97.2+1.20.4
+ *
+ * Producing artefacts named twitchmod-v1.1-<mcversion>.jar.
+ */
